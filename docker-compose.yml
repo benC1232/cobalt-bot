@@ -1,0 +1,33 @@
+# runs the cobalt api together with the discord bot in bot/
+# usage: cp bot/.env.example bot/.env (set DISCORD_TOKEN), then docker compose up -d --build
+
+# keep logs bounded so they can't fill the disk (3 x 10 MB per container)
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  cobalt-api:
+    build: .
+    # restarts on crash and on boot (as long as the docker daemon starts on boot)
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      # the bot downloads tunnel URLs from this address, so it must be reachable from the bot container
+      API_URL: "http://cobalt-api:9000/"
+      # the bot is the only client; don't let cobalt's per-IP limit throttle it
+      RATELIMIT_MAX: "1000"
+      TUNNEL_RATELIMIT_MAX: "1000"
+    # no published ports: cobalt is only reachable by the bot on the compose network
+
+  bot:
+    build: ./bot
+    restart: unless-stopped
+    logging: *logging
+    env_file: bot/.env
+    environment:
+      COBALT_API_URL: "http://cobalt-api:9000/"
+    depends_on:
+      - cobalt-api

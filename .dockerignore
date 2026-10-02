@@ -17,5 +17,8 @@ cookies.json
 # docker
 docker-compose.yml
 
+# discord bot is built separately from bot/
+bot
+
 # ide
 .vscode

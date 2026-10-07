@@ -1,5 +1,6 @@
-# runs the cobalt api together with the discord bot in bot/
-# usage: cp bot/.env.example bot/.env (set DISCORD_TOKEN), then docker compose up -d --build
+# runs the cobalt api together with the discord and telegram bots in bot/
+# usage: cp bot/.env.example bot/.env (set DISCORD_TOKEN / TELEGRAM_TOKEN), then docker compose up -d --build
+# to run only one bot: docker compose up -d --build bot (or telegram-bot)
 
 # keep logs bounded so they can't fill the disk (3 x 10 MB per container)
 x-logging: &logging
@@ -24,6 +25,17 @@ services:
 
   bot:
     build: ./bot
+    restart: unless-stopped
+    logging: *logging
+    env_file: bot/.env
+    environment:
+      COBALT_API_URL: "http://cobalt-api:9000/"
+    depends_on:
+      - cobalt-api
+
+  telegram-bot:
+    build: ./bot
+    command: [ "python", "-m", "cobalt_bot.telegram" ]
     restart: unless-stopped
     logging: *logging
     env_file: bot/.env
